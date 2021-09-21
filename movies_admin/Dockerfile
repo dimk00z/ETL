@@ -6,10 +6,10 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 RUN pip install --upgrade pip
-COPY movies_admin/requirements/*.txt requirements/
+COPY requirements/*.txt requirements/
 RUN pip install --no-cache-dir -r requirements/production.txt
 
-COPY ./movies_admin .
+COPY . .
 
 RUN python manage.py collectstatic --noinput
 

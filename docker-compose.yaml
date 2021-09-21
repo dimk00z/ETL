@@ -4,6 +4,8 @@ services:
     container_name: postges_movie_db
     image: postgres:13.4
     restart: always
+    ports:
+      - 5432:5432
     expose: 
       - "5432"
     volumes: 
@@ -15,7 +17,7 @@ services:
   movies_admin:
     container_name: movies_admin
     build:
-      context: .
+      context: ./movies_admin
       dockerfile: Dockerfile
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
     restart: always
@@ -53,8 +55,10 @@ services:
       - "9200"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+    # depends_on:
+    #   - movies_admin
 
-    
+
   
 volumes:
   static_volume:

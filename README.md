@@ -30,6 +30,8 @@ http://localhost/api/v1/movies/
 
 http://localhost/api/v1/movies/00af52ec-9345-4d66-adbe-50eb917f463a/
 
+4. `docker-compose down -v`
+
 ___
 
 

@@ -12,3 +12,11 @@ class PostgresSettings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
+
+class ElasticSettings(BaseSettings):
+    host: str = Field(..., env="ES_HOST")
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"

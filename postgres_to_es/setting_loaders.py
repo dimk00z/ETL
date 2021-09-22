@@ -1,4 +1,8 @@
+import logging
+from typing import Tuple
+
 from pydantic import BaseSettings, Field
+from pydantic.error_wrappers import ValidationError
 
 
 class PostgresSettings(BaseSettings):
@@ -20,3 +24,11 @@ class ElasticSettings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
+
+def load_etl_settings() -> Tuple[PostgresSettings, ElasticSettings]:
+    try:
+        return (PostgresSettings(), ElasticSettings())
+    except ValidationError:
+        logging.error("Could load settings from enviromentals or .env")
+        raise SystemExit

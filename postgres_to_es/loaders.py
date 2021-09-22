@@ -4,6 +4,8 @@ import backoff
 import elasticsearch
 import psycopg2
 from psycopg2.extras import DictCursor
+from redis import Redis
+from redis.exceptions import ConnectionError as RedisConnectionError
 from urllib3.exceptions import NewConnectionError
 
 
@@ -27,6 +29,13 @@ def load_elastic(host: str) -> elasticsearch.client.Elasticsearch:
     if not es.ping():
         raise ValueError("Connection failed")
     return es
+
+
+@backoff.on_exception(backoff.expo, (RedisConnectionError), on_backoff=backoff_hdlr)
+def load_redis(settings: dict) -> Redis:
+    redis_adapter: Redis = Redis(**settings)
+    redis_adapter.ping()
+    return redis_adapter
 
 
 def close_pg_conn(pg_conn: psycopg2.extensions.connection):

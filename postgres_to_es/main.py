@@ -14,7 +14,6 @@ logging.basicConfig(level=logging.INFO)
 def main():
     postgres_settings, elastic_settings = load_etl_settings()
     pg_conn: psycopg2.extensions.connection = load_postges(postgres_settings.dict())
-
     es: elasticsearch.client.Elasticsearch = load_elastic(elastic_settings.host)
 
     pg_conn.close()

@@ -12,36 +12,6 @@ services:
       - ../postgres:/var/lib/postgresql/data
     env_file:
       - ./movies_admin/.env
-
-
-  movies_admin:
-    container_name: movies_admin
-    build:
-      context: ./movies_admin
-      dockerfile: Dockerfile
-    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
-    restart: always
-    expose:
-      - "8000"
-    env_file: 
-      - ./movies_admin/.env
-    volumes:
-      - static_volume:/code/staticfiles
-    depends_on: 
-      - postges_movie_db
-
-  nginx:
-    container_name: movies_nginx
-    build: 
-      context: ./nginx
-      dockerfile: Dockerfile
-    volumes:
-      - static_volume:/code/staticfiles
-    restart: always
-    ports:
-      - 80:80
-    depends_on:
-      - movies_admin
   
   elasticsearch:
     container_name: movies_elastic
@@ -55,9 +25,35 @@ services:
       - "9200"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
-    # depends_on:
-    #   - movies_admin
 
+  # movies_admin:
+  #   container_name: movies_admin
+  #   build:
+  #     context: ./movies_admin
+  #     dockerfile: Dockerfile
+  #   command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+  #   restart: always
+  #   expose:
+  #     - "8000"
+  #   env_file: 
+  #     - ./movies_admin/.env
+  #   volumes:
+  #     - static_volume:/code/staticfiles
+  #   depends_on: 
+  #     - postges_movie_db
+
+  # nginx:
+  #   container_name: movies_nginx
+  #   build: 
+  #     context: ./nginx
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - static_volume:/code/staticfiles
+  #   restart: always
+  #   ports:
+  #     - 80:80
+  #   depends_on:
+  #     - movies_admin
 
   
 volumes:

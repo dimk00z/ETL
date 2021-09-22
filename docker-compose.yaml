@@ -10,6 +10,8 @@ services:
       - "5432"
     volumes: 
       - ../postgres:/var/lib/postgresql/data
+    networks:
+      - movie_project_net
     env_file:
       - ./movies_admin/.env
   
@@ -23,6 +25,8 @@ services:
       - 9200:9200
     expose:
       - "9200"
+    networks:
+      - movie_project_net
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
 
@@ -60,3 +64,8 @@ volumes:
   static_volume:
   elasticsearch-data:
     driver: local
+
+networks:
+  movie_project_net:
+    name: movie_project_net
+    driver: bridge

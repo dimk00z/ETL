@@ -17,7 +17,7 @@ def backoff_hdlr(details):
 
 @backoff.on_exception(backoff.expo, (psycopg2.Error, psycopg2.OperationalError), on_backoff=backoff_hdlr)
 def load_postges(postgres_settings: dict) -> psycopg2.extensions.connection:
-    pg_conn = psycopg2.connect(**postgres_settings, cursor_factory=DictCursor)
+    pg_conn: psycopg2.extensions.connection = psycopg2.connect(**postgres_settings, cursor_factory=DictCursor)
     return pg_conn
 
 
@@ -27,3 +27,8 @@ def load_elastic(host: str) -> elasticsearch.client.Elasticsearch:
     if not es.ping():
         raise ValueError("Connection failed")
     return es
+
+
+def close_pg_conn(pg_conn: psycopg2.extensions.connection):
+    pg_conn.close()
+    logging.info("Postgres connection has been closed correctly")

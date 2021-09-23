@@ -13,6 +13,7 @@ from connections import (
     connect_to_postges,
     connect_to_redis,
 )
+from extractor import PostgresExtractor
 from setting_loaders import load_etl_settings
 
 logger = logging.getLogger(__file__)
@@ -24,8 +25,8 @@ def load():
 
 
 def start_etl(pg_conn, es):
-    pass
-    loader = load()
+    postgres_extractor: PostgresExtractor = PostgresExtractor(pg_conn=pg_conn)
+    postgres_extractor.extract_data()
 
     # transformer = transform(loader, Transformer())
 

@@ -26,7 +26,11 @@ def load():
 
 def start_etl(pg_conn, es):
     postgres_extractor: PostgresExtractor = PostgresExtractor(pg_conn=pg_conn)
-    postgres_extractor.extract_data()
+    i = 0
+    # with generator
+    for extracted_movies in postgres_extractor.extract_data():
+        print(len(extracted_movies))
+        i += 1
 
     # transformer = transform(loader, Transformer())
 

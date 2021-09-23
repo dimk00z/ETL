@@ -1,8 +1,7 @@
 import logging
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Set
-from unicodedata import name
+from typing import Dict, Set
 
 import psycopg2
 
@@ -33,12 +32,10 @@ class PostgresExtractor:
         self,
         pg_conn: psycopg2.extensions.connection,
         last_state: str = "",
-        query_limit: int = 10000,
-        cursor_limit: int = 100,
+        cursor_limit: int = 200,
     ) -> None:
         self.pg_conn = pg_conn
         self.last_state: str = last_state
-        self.query_limit: str = str(query_limit)
         self.cursor_limit = cursor_limit
 
     def fetch_person(self, row: psycopg2.extras.DictRow, movie: FilmWork):
@@ -72,8 +69,7 @@ class PostgresExtractor:
                 "SELECT id, updated_at",
                 "FROM content.film_work",
                 f"WHERE updated_at > '{self.last_state}'" if self.last_state else "",
-                "ORDER BY updated_at",
-                f"LIMIT {self.query_limit};",
+                "ORDER BY updated_at;",
             ]
         )
         movies_info_query: str = """
@@ -89,7 +85,7 @@ class PostgresExtractor:
             p.id, 
             p.full_name,
             g.name
-            FROM         content.film_work fw
+            FROM content.film_work fw
             LEFT JOIN content.person_film_work pfw ON pfw.film_work_id = fw.id
             LEFT JOIN content.person p ON p.id = pfw.person_id
             LEFT JOIN content.genre_film_work gfw ON gfw.film_work_id = fw.id
@@ -97,9 +93,10 @@ class PostgresExtractor:
             WHERE fw.id IN ({});"""
         movies_id_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(name="movies_id_cursor")
         movies_id_cursor.execute(movies_id_query)
-
-        movies: Dict[str, FilmWork] = {}
+        # movies: Dict[str, FilmWork] = {}
+        # i = 0
         while data := movies_id_cursor.fetchmany(self.cursor_limit):
+            movies: Dict[str, FilmWork] = {}
             movies_extented_data_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(
                 name="movies_extented_data_cursor"
             )
@@ -110,5 +107,7 @@ class PostgresExtractor:
             for movie_row in movies_extented_data:
                 self.fetch_movie_row(row=movie_row, movies=movies)
             movies_extented_data_cursor.close()
-        print(len(movies))
-        print(movies["46f15353-2add-415d-9782-fa9c5b8083d5"])
+            # print(i)
+            # i += 1
+            yield movies
+        # return movies

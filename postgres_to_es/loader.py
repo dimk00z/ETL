@@ -1,14 +1,15 @@
 import logging
 
-import elasticsearch
+from elasticsearch import helpers
+from elasticsearch.client import Elasticsearch as ES_client
 
 
 class ESLoader:
-    def __init__(self, es: elasticsearch.client.Elasticsearch, data_for_loading: dict = {}) -> None:
+    def __init__(self, es: ES_client, data_for_loading: dict = {}, index_name: str = "movies") -> None:
         self.es = es
-        self.created_index = self.create_index()
+        self.index_name = index_name
 
-    def create_index(self, index_name: str = "movies"):
+    def create_index(self) -> None:
 
         index_exist: bool = False
         settings: dict = {
@@ -68,16 +69,24 @@ class ESLoader:
             },
         }
         try:
-            check_index: bool = self.es.indices.exists(index_name)
+            check_index: bool = self.es.indices.exists(self.index_name)
             if not check_index:
-                create_result: dict = self.es.indices.create(index=index_name, ignore=400, body=settings)
+                create_result: dict = self.es.indices.create(index=self.index_name, ignore=400, body=settings)
                 if "error" in create_result:
                     raise elasticsearch.RequestError
                 logging.info(create_result)
             else:
-                logging.info(f"Index {index_name} already exists")
+                logging.info(f"Index {self.index_name} already exists")
             index_exist = True
         except elasticsearch.RequestError:
             logging.error(create_result["error"])
         finally:
-            return index_exist
+            self.created_index = index_exist
+            return self.created_index
+
+    def bulk_index(self, transformed_data: dict) -> None:
+        try:
+            response = helpers.bulk(self.es, body=transformed_data, index="employees")
+            print("\nactions RESPONSE:", response)
+        except Exception as e:
+            print("\nERROR:", e)

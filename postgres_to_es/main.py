@@ -28,17 +28,18 @@ def load():
 
 
 def start_etl(pg_conn, es):
-    postgres_extractor: PostgresExtractor = PostgresExtractor(pg_conn=pg_conn)
+    postgres_extractor: PostgresExtractor = PostgresExtractor(pg_conn=pg_conn, cursor_limit=300)
     i = 0
-    # with generator
-    # for extracted_movies in postgres_extractor.extract_data():
-    #     print(len(extracted_movies))
-    #     i += 1
 
     es_loader = ESLoader(es)
-    # transformer = transform(loader, Transformer())
+    es_loader.create_index()
+    # pагрузка данных с ипользованием генератора
+    for extracted_movies in postgres_extractor.extract_data():
+        print(len(extracted_movies))
+        i += 1
+        break
 
-    # extractor = extract(transformer, PostgresExtractor(pg_conn))
+    # transformer = transform(loader, Transformer())
 
     # etl(extractor)
 

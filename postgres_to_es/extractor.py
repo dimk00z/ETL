@@ -72,8 +72,7 @@ class PostgresExtractor:
             WHERE fw.id IN ({});"""
         movies_id_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(name="movies_id_cursor")
         movies_id_cursor.execute(movies_id_query)
-        # movies: Dict[str, FilmWork] = {}
-        # i = 0
+
         while data := movies_id_cursor.fetchmany(self.cursor_limit):
             movies: Dict[str, FilmWork] = {}
             movies_extented_data_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(
@@ -86,7 +85,5 @@ class PostgresExtractor:
             for movie_row in movies_extented_data:
                 self.fetch_movie_row(row=movie_row, movies=movies)
             movies_extented_data_cursor.close()
-            # print(i)
-            # i += 1
+
             yield movies
-        # return movies

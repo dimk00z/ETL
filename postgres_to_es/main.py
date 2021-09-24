@@ -1,10 +1,12 @@
 import atexit
 import logging
 from datetime import datetime
+from os import environ
 from typing import List
 
 import elasticsearch
 import psycopg2
+from dotenv import load_dotenv
 from redis import Redis
 
 from connections import (
@@ -20,13 +22,15 @@ from transformer import Transformer
 
 logger = logging.getLogger(__file__)
 logging.basicConfig(level=logging.INFO)
+load_dotenv()
 
 
 def start_etl(pg_conn, es):
     postgres_extractor: PostgresExtractor = PostgresExtractor(pg_conn=pg_conn, cursor_limit=300)
 
     es_loader = ESLoader(es)
-    # es_loader.drop_index()
+    if environ.get("ES_SHOULD_DROP_INDEX") == "TRUE":
+        es_loader.drop_index()
     es_loader.create_index()
     # загрузка данных с ипользованием генератора
     for extracted_movies in postgres_extractor.extract_data():

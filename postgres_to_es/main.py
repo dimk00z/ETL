@@ -1,7 +1,6 @@
 import atexit
 import logging
 from datetime import datetime
-from typing import Dict, List, Tuple
 
 import elasticsearch
 import psycopg2
@@ -14,7 +13,11 @@ from connections import (
     connect_to_redis,
 )
 from extractor import PostgresExtractor
+from loader import ESLoader
 from setting_loaders import load_etl_settings
+
+# from typing import Dict, List, Tuple
+
 
 logger = logging.getLogger(__file__)
 logging.basicConfig(level=logging.INFO)
@@ -28,10 +31,11 @@ def start_etl(pg_conn, es):
     postgres_extractor: PostgresExtractor = PostgresExtractor(pg_conn=pg_conn)
     i = 0
     # with generator
-    for extracted_movies in postgres_extractor.extract_data():
-        print(len(extracted_movies))
-        i += 1
+    # for extracted_movies in postgres_extractor.extract_data():
+    #     print(len(extracted_movies))
+    #     i += 1
 
+    es_loader = ESLoader(es)
     # transformer = transform(loader, Transformer())
 
     # extractor = extract(transformer, PostgresExtractor(pg_conn))

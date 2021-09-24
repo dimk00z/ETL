@@ -1,6 +1,7 @@
 import atexit
 import logging
 from datetime import datetime
+from typing import List
 
 import elasticsearch
 import psycopg2
@@ -15,33 +16,25 @@ from connections import (
 from extractor import PostgresExtractor
 from loader import ESLoader
 from setting_loaders import load_etl_settings
-
-# from typing import Dict, List, Tuple
-
+from transformer import Transformer
 
 logger = logging.getLogger(__file__)
 logging.basicConfig(level=logging.INFO)
 
 
-def load():
-    pass
-
-
 def start_etl(pg_conn, es):
     postgres_extractor: PostgresExtractor = PostgresExtractor(pg_conn=pg_conn, cursor_limit=300)
-    i = 0
 
     es_loader = ESLoader(es)
+    # es_loader.drop_index()
     es_loader.create_index()
-    # pагрузка данных с ипользованием генератора
+    # загрузка данных с ипользованием генератора
     for extracted_movies in postgres_extractor.extract_data():
-        print(len(extracted_movies))
-        i += 1
-        break
-
-    # transformer = transform(loader, Transformer())
-
-    # etl(extractor)
+        transformer = Transformer(extracted_movies=extracted_movies)
+        transformed_movies: List[dict] = transformer.transform_movies()
+        es_loader.bulk_index(transformed_data=transformed_movies)
+        logging.info(f"Loaded {len(extracted_movies)} movies to Elasticsearch")
+        # break
 
 
 def main():

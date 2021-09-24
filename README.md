@@ -1,4 +1,7 @@
 # Решение проектной работы 3 спринта
+`curl -X DELETE "localhost:9200/movies?pretty"` - удалить индекс
+
+
 
 ## [Task 1](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/tasks/01_django.md)
 

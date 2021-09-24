@@ -55,3 +55,4 @@ doc.html
 postgres/
 static/
 staticfiles/
+.vscode/

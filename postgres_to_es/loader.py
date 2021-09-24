@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from elasticsearch import helpers
 from elasticsearch.client import Elasticsearch as ES_client
@@ -9,7 +10,10 @@ class ESLoader:
         self.es = es
         self.index_name = index_name
 
-    def create_index(self) -> None:
+    def drop_index(self):
+        self.es.indices.delete(index=self.index_name, ignore=[400, 404])
+
+    def create_index(self) -> bool:
 
         index_exist: bool = False
         settings: dict = {
@@ -76,7 +80,7 @@ class ESLoader:
                     raise elasticsearch.RequestError
                 logging.info(create_result)
             else:
-                logging.info(f"Index {self.index_name} already exists")
+                logging.info(f"Elasticsearch index {self.index_name} already exists")
             index_exist = True
         except elasticsearch.RequestError:
             logging.error(create_result["error"])
@@ -84,9 +88,10 @@ class ESLoader:
             self.created_index = index_exist
             return self.created_index
 
-    def bulk_index(self, transformed_data: dict) -> None:
+    def bulk_index(self, transformed_data: List[dict]) -> None:
         try:
-            response = helpers.bulk(self.es, body=transformed_data, index="employees")
-            print("\nactions RESPONSE:", response)
-        except Exception as e:
-            print("\nERROR:", e)
+            helpers.bulk(
+                self.es, actions=transformed_data, index=self.index_name, refresh=True, raise_on_error=True
+            )
+        except elasticsearch.ElasticsearchException as e:
+            logging.error(e)

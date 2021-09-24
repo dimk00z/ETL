@@ -69,7 +69,8 @@ class PostgresExtractor:
             LEFT JOIN content.person p ON p.id = pfw.person_id
             LEFT JOIN content.genre_film_work gfw ON gfw.film_work_id = fw.id
             LEFT JOIN content.genre g ON g.id = gfw.genre_id
-            WHERE fw.id IN ({});"""
+            WHERE fw.id IN ({})
+            GROUP BY fw.id, fw.title, fw.description, fw.rating;"""
         movies_id_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(name="movies_id_cursor")
         movies_id_cursor.execute(movies_id_query)
 

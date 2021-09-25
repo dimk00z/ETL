@@ -1,5 +1,5 @@
 import logging
-from typing import Dict
+from typing import List
 
 import psycopg2
 
@@ -26,26 +26,27 @@ class PostgresExtractor:
         except AttributeError as e:
             logging.error(f"{e}, {row}")
 
-    def fetch_movie_row(self, row: psycopg2.extras.DictRow, movies: Dict[str, FilmWork]):
-        movie_id = row["fw_id"]
-        if movie_id not in movies:
-            movies[movie_id] = FilmWork(
-                title=row["title"],
-                description=row["description"],
-                rating=row["rating"],
-                type=row["type"],
-                created_at=row["created_at"],
-                updated_at=row["updated_at"],
-                genres=row["genres"],
-            )
+    def fetch_movie_row(self, row: psycopg2.extras.DictRow) -> FilmWork:
+        film_work = FilmWork(
+            id=row["fw_id"],
+            title=row["title"],
+            description=row["description"],
+            rating=row["rating"],
+            type=row["type"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            genres=row["genres"],
+        )
+
         for persons in ("directors", "actors", "writers"):
             if row[persons]:
                 for person in row[persons]:
-                    getattr(movies[movie_id], persons).add(
+                    getattr(film_work, persons).add(
                         Person(id=person["id"], full_name=person["name"], role=persons[:-1])
                     )
+        return film_work
 
-    def extract_data(self) -> Dict[str, FilmWork]:
+    def extract_data(self) -> List[FilmWork]:
         movies_id_query: str = " ".join(
             [
                 "SELECT id, updated_at",
@@ -74,13 +75,14 @@ class PostgresExtractor:
             LEFT OUTER JOIN content.person_film_work pfw ON (fw.id = pfw.film_work_id)
             LEFT OUTER JOIN content.person p ON (pfw.person_id = p.id)
             WHERE fw.id IN ({})
-            GROUP BY fw.id, fw.title, fw.description, fw.rating;
+            GROUP BY fw.id, fw.title, fw.description, fw.rating
+            ORDER BY fw.updated_at;
         """
         movies_id_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(name="movies_id_cursor")
         movies_id_cursor.execute(movies_id_query)
 
         while data := movies_id_cursor.fetchmany(self.cursor_limit):
-            movies: Dict[str, FilmWork] = {}
+            movies: List[FilmWork] = []
             movies_extented_data_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(
                 name="movies_extented_data_cursor"
             )
@@ -89,7 +91,7 @@ class PostgresExtractor:
             movies_extented_data = movies_extented_data_cursor.fetchall()
 
             for movie_row in movies_extented_data:
-                self.fetch_movie_row(row=movie_row, movies=movies)
+                movies.append(self.fetch_movie_row(row=movie_row))
             movies_extented_data_cursor.close()
 
             yield movies

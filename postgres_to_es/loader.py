@@ -6,7 +6,7 @@ from elasticsearch.client import Elasticsearch as ES_client
 
 
 class ESLoader:
-    def __init__(self, es: ES_client, data_for_loading: dict = {}, index_name: str = "movies") -> None:
+    def __init__(self, es: ES_client, index_name: str = "movies") -> None:
         self.es = es
         self.index_name = index_name
 
@@ -50,7 +50,6 @@ class ESLoader:
                     "genres": {"type": "keyword"},
                     "title": {"type": "text", "analyzer": "ru_en", "fields": {"raw": {"type": "keyword"}}},
                     "description": {"type": "text", "analyzer": "ru_en"},
-                    # "director": {"type": "text", "analyzer": "ru_en"},
                     "actors_names": {"type": "text", "analyzer": "ru_en"},
                     "writers_names": {"type": "text", "analyzer": "ru_en"},
                     "directors": {

@@ -12,6 +12,7 @@ class Person:
 
 @dataclass
 class FilmWork:
+    id: str
     title: str
     description: str = None
     rating: float = field(default=0.0)

@@ -17,7 +17,7 @@ class PostgresExtractor:
         self.last_state: str = last_state
         self.cursor_limit = cursor_limit
 
-    def fetch_person(self, row: psycopg2.extras.DictRow, movie: FilmWork):
+    def fetch_persons(self, row: psycopg2.extras.DictRow, movie: FilmWork):
         try:
             roles_dict_name = f'{row["role"]}s'
             getattr(movie, roles_dict_name).add(
@@ -36,11 +36,14 @@ class PostgresExtractor:
                 type=row["type"],
                 created_at=row["created_at"],
                 updated_at=row["updated_at"],
+                genres=row["genres"],
             )
-        if row["id"]:
-            self.fetch_person(row=row, movie=movies[movie_id])
-        if row["name"]:
-            movies[movie_id].genres.add(row["name"])
+        for persons in ("directors", "actors", "writers"):
+            if row[persons]:
+                for person in row[persons]:
+                    getattr(movies[movie_id], persons).add(
+                        Person(id=person["id"], full_name=person["name"], role=persons[:-1])
+                    )
 
     def extract_data(self) -> Dict[str, FilmWork]:
         movies_id_query: str = " ".join(
@@ -51,26 +54,28 @@ class PostgresExtractor:
                 "ORDER BY updated_at;",
             ]
         )
+
         movies_info_query: str = """
             SELECT
-            fw.id as fw_id, 
-            fw.title, 
-            fw.description, 
-            fw.rating, 
-            fw.type, 
+            fw.id as fw_id,
+            fw.title,
+            fw.type,
+            fw.description,
+            fw.rating as rating,
             fw.created_at, 
             fw.updated_at, 
-            pfw.role, 
-            p.id, 
-            p.full_name,
-            g.name
+            ARRAY_AGG(DISTINCT g.name) AS genres,
+	        JSON_AGG(DISTINCT jsonb_build_object('id', p.id, 'name', p.full_name)) FILTER (WHERE pfw.role = 'director') AS directors,
+            JSON_AGG(DISTINCT jsonb_build_object('id', p.id, 'name', p.full_name)) FILTER (WHERE pfw.role = 'actor') AS actors,
+            JSON_AGG(DISTINCT jsonb_build_object('id', p.id, 'name', p.full_name)) FILTER (WHERE pfw.role = 'writer') AS writers
             FROM content.film_work fw
-            LEFT JOIN content.person_film_work pfw ON pfw.film_work_id = fw.id
-            LEFT JOIN content.person p ON p.id = pfw.person_id
-            LEFT JOIN content.genre_film_work gfw ON gfw.film_work_id = fw.id
-            LEFT JOIN content.genre g ON g.id = gfw.genre_id
+            LEFT OUTER JOIN content.genre_film_work gfw ON fw.id = gfw.film_work_id
+            LEFT OUTER JOIN content.genre g ON (gfw.genre_id = g.id)
+            LEFT OUTER JOIN content.person_film_work pfw ON (fw.id = pfw.film_work_id)
+            LEFT OUTER JOIN content.person p ON (pfw.person_id = p.id)
             WHERE fw.id IN ({})
-            GROUP BY fw.id, fw.title, fw.description, fw.rating;"""
+            GROUP BY fw.id, fw.title, fw.description, fw.rating;
+        """
         movies_id_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(name="movies_id_cursor")
         movies_id_cursor.execute(movies_id_query)
 

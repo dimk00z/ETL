@@ -38,7 +38,7 @@ class State:
 
     def set_state(self, key: str, value: Any) -> None:
         """Установить состояние для определённого ключа"""
-        state = self.storege.retrieve_state()
+        state = self.storage.retrieve_state()
         state[key] = value.isoformat()
         self.storage.save_state(state)
 

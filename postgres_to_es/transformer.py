@@ -7,9 +7,10 @@ class Transformer:
 
     def transform_movies(self) -> List[dict]:
         transformed_movies: List[dict] = []
+
         for film_work in self.extracted_movies:
             transformed_movie = {
-                "id": film_work.id,
+                "_id": film_work.id,
                 "imdb_rating": film_work.rating,
                 "title": film_work.title,
                 "description": film_work.description,

@@ -95,8 +95,24 @@ class ESLoader:
             self.created_index = index_exist
             return self.created_index
 
-    def bulk_index(self, transformed_data: List[dict]) -> None:
+    def bulk_index(self, transformed_data: List[dict], last_state: str) -> None:
         try:
+            if last_state:
+
+                remove_actions = [
+                    {
+                        "_id": transormed_film["_id"],
+                        "_op_type": "delete",
+                    }
+                    for transormed_film in transformed_data
+                ]
+                helpers.bulk(
+                    self.es,
+                    actions=remove_actions,
+                    index=self.index_name,
+                    raise_on_error=False,
+                )
+
             helpers.bulk(
                 self.es, actions=transformed_data, index=self.index_name, refresh=True, raise_on_error=True
             )

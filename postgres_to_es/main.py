@@ -36,15 +36,27 @@ def start_etl(pg_conn, es_loader: ESLoader, state: State):
     )
     loaded_films_number: int = 0
     for extracted_movies in postgres_extractor.extract_data():
+
         transformer = Transformer(extracted_movies=extracted_movies)
-        last_updated_at = extracted_movies[-1].updated_at
-        state.set_state("last_updated_at", last_updated_at)
         transformed_movies: List[dict] = transformer.transform_movies()
-        es_loader.bulk_index(transformed_data=transformed_movies)
+        es_loader.bulk_index(transformed_data=transformed_movies, last_state=last_state)
+
         loaded_films_number = len(extracted_movies)
         logging.info(f"Loaded {loaded_films_number} movies to Elasticsearch")
+
+        last_updated_at = extracted_movies[-1].updated_at
+        state.set_state("last_updated_at", last_updated_at)
+
     if loaded_films_number == 0:
         logging.info("There no films for ETL")
+
+
+def create_es_index(elastic_settings):
+    es: elasticsearch.client.Elasticsearch = connect_to_elastic(elastic_settings.host)
+    es_loader = ESLoader(es=es, index_name=elastic_settings.index)
+    es_loader.drop_index()
+    es_loader.create_index()
+    es.transport.close()
 
 
 def main():
@@ -52,11 +64,10 @@ def main():
 
     postgres_settings, elastic_settings, redis_settings = load_etl_settings()
 
-    first_run: bool = True
-    # redis_adapter: Redis = connect_to_redis(redis_settings.dict())
-
     repeat_time = int(environ.get("REPEAT_TIME"))
-    # state = State(storage=RedisStorage(redis_adapter=redis_adapter, redis_db=environ.get("REDIS_DB")))
+
+    if environ.get("ES_SHOULD_DROP_INDEX") == "TRUE":
+        create_es_index(elastic_settings)
 
     while True:
         pg_conn: psycopg2.extensions.connection = connect_to_postges(postgres_settings.dict())
@@ -65,10 +76,7 @@ def main():
         es: elasticsearch.client.Elasticsearch = connect_to_elastic(elastic_settings.host)
 
         es_loader = ESLoader(es)
-        if environ.get("ES_SHOULD_DROP_INDEX") == "TRUE" and first_run:
-            es_loader.drop_index()
-            es_loader.create_index()
-            first_run = False
+
         start_etl(pg_conn=pg_conn, es_loader=es_loader, state=state)
         close_pg_conn(pg_conn=pg_conn)
         es.transport.close()

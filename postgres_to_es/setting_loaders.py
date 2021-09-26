@@ -20,6 +20,7 @@ class PostgresSettings(BaseSettings):
 
 class ElasticSettings(BaseSettings):
     host: str = Field(..., env="ES_HOST")
+    index: str = Field(..., env="ES_INDEX")
 
     class Config:
         env_file = ".env"

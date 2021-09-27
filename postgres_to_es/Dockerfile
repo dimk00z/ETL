@@ -1,13 +1,12 @@
 FROM python:3.9.5-slim-buster
 
-WORKDIR /etl
+WORKDIR /code
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-COPY . .
-
 RUN pip install --upgrade pip
+COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD CMD python -u etl.py
+CMD python main.py

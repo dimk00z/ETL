@@ -16,28 +16,28 @@
 
 2. `movies_admin` - образ с бэкэндом django на основе [Dockerfile_django](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/Dockerfile_django). При развертывании в образ устанавливаются зависимости [production.txt](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/movies_admin/requirements/production.txt). Сервер работает через `gunicorn`.
 3. `nginx` - образ с nginx веб-сервером на основе [Dockerfile_nginx](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/nginx/Dockerfile_nginx) для отдачи статики и проброса с movies_admin:8000.
-4. `elasticsearch` - образ с Elasticsearch v.7.14.1 для хранения поисковх индексов
+4. `elasticsearch` - образ с Elasticsearch v.7.14.1 для хранения поисковых индексов
 5. `redis` - Redis для хранения состояния
 6. `postgres_to_es` - сервис для загрузки индексов из Postgres в Elasticsearch
 
 ## Описание ETL реализации
 
 - `main.py` - основной скрипт для запуска ETL. Весь процесс предстваляет собой бесконечный цикл с задержкой выполнения `REPEAT_TIME` из переменных окружения;
-- - `def main` - подгружает настройки для баз данных, и вызывает `start_etl`. По выполнению закрвывает коннекты;
+- - `def main` - подгружает настройки для баз данных, и вызывает `start_etl`. По выполнению закрывает коннекты;
 - - `def start_etl` - основная функция загрузки данных; 
 - `connections.py` - содержит соединения с Postgres, ES, Redis. Все используют `backoff` для возможности переподключений;
 - `state.py` - классы для сохранения состояний по аналогии с предложенными в теории;
 - `extractor.py` - загружает данные из Postgres в лимитах `POSTGRES_PAGE_LIMIT` и отдает их в режиме генератора списком из dataclass. Данные подгружаются частями;
 - `transformer.py` - преобразует в необходимый для Elascticseacrh вид;
-- `loader.py` - создает индекмс при необходимости, пишет в ES;
+- `loader.py` - создает индекс при необходимости, пишет в ES;
 - `models.py` - описание dataclasses для удобства выгрузки и валидации;
-- `setting_loaders.py` - подгрузка настроек для сервисов с использованием `pydantic`.
+- `setting_loaders.py` - подгружаются настройки для сервисов с использованием `pydantic`.
 
 
 ## Запуск проекта
 
-1. Для корректной работы необходимs `.env` файл на основе `env_example`. Важно: если `ES_SHOULD_DROP_INDEX=TRUE`, то индекс и запись в redit сбросятся.
-2. Предпологается, что по пути `../postgres` находятся данные из предыдущих двух спринтов: первичные миграции проведены, в базе есть данные администратора и выгружены данные из sqlite.
+1. Для корректной работы необходим `.env` файл на основе `env_example`. Важно: если `ES_SHOULD_DROP_INDEX=TRUE`, то индекс и запись в redit сбросятся.
+2. Предполагается, что по пути `../postgres` находятся данные из предыдущих двух спринтов: первичные миграции проведены, в базе есть данные администратора и выгружены данные из sqlite.
 4. `docker-compose up -d --build` - для построения и запуска контейнеров.
 5. `docker-compose down -v` -  для удаления контейнеров
 

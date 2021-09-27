@@ -66,13 +66,16 @@ def main():
 
     repeat_time = int(environ.get("REPEAT_TIME"))
 
+    redis_db: str = environ.get("REDIS_DB")
+    redis_adapter: Redis = connect_to_redis(redis_settings.dict())
+
     if environ.get("ES_SHOULD_DROP_INDEX") == "TRUE":
         create_es_index(elastic_settings)
+        redis_adapter.flushdb(redis_db)
 
     while True:
         pg_conn: psycopg2.extensions.connection = connect_to_postges(postgres_settings.dict())
-        redis_adapter: Redis = connect_to_redis(redis_settings.dict())
-        state = State(storage=RedisStorage(redis_adapter=redis_adapter, redis_db=environ.get("REDIS_DB")))
+        state = State(storage=RedisStorage(redis_adapter=redis_adapter, redis_db=redis_db))
         es: elasticsearch.client.Elasticsearch = connect_to_elastic(elastic_settings.host)
 
         es_loader = ESLoader(es)

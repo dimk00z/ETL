@@ -81,6 +81,7 @@ def main():
         es_loader = ESLoader(es)
 
         start_etl(pg_conn=pg_conn, es_loader=es_loader, state=state)
+
         close_pg_conn(pg_conn=pg_conn)
         es.transport.close()
         logging.info(f"Script is waiting {repeat_time} seconds for restart")

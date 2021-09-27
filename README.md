@@ -33,7 +33,8 @@
 - `transformer.py` - преобразует в необходимый для Elascticseacrh вид;
 - `loader.py` - создает индекс при необходимости, пишет в ES;
 - `models.py` - описание dataclasses для удобства выгрузки и валидации;
-- `setting_loaders.py` - подгружаются настройки для сервисов с использованием `pydantic`.
+- `setting_loaders.py` - подгружаются настройки для сервисов с использованием `pydantic`;
+- [`signals.py`](https://github.com/dimk00z/ETL/blob/main/movies_admin/movies/signals.py) - прописал сигналы для обновления поля `updated_at` при изменении дополнительных таблиц.
 
 
 ## Запуск проекта

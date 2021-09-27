@@ -43,6 +43,28 @@
 4. `docker-compose up -d --build` - для построения и запуска контейнеров.
 5. `docker-compose down -v` -  для удаления контейнеров
 
+Лог выполнения  ETL скрипта:
+
+```python main.py
+INFO:root:Start etl_app at 2021-09-27 10:16:52.356840
+INFO:elasticsearch:GET http://localhost:9200/ [status:200 request:0.003s]
+INFO:elasticsearch:HEAD http://localhost:9200/ [status:200 request:0.002s]
+INFO:elasticsearch:DELETE http://localhost:9200/movies [status:200 request:0.361s]
+INFO:elasticsearch:PUT http://localhost:9200/movies [status:200 request:1.665s]
+INFO:root:{'acknowledged': True, 'shards_acknowledged': True, 'index': 'movies'}
+INFO:elasticsearch:GET http://localhost:9200/ [status:200 request:0.004s]
+INFO:elasticsearch:HEAD http://localhost:9200/ [status:200 request:0.003s]
+INFO:elasticsearch:POST http://localhost:9200/movies/_bulk?refresh=true [status:200 request:0.186s]
+INFO:root:Loaded 300 movies to Elasticsearch
+INFO:elasticsearch:POST http://localhost:9200/movies/_bulk?refresh=true [status:200 request:0.215s]
+INFO:root:Loaded 300 movies to Elasticsearch
+INFO:elasticsearch:POST http://localhost:9200/movies/_bulk?refresh=true [status:200 request:0.162s]
+INFO:root:Loaded 300 movies to Elasticsearch
+INFO:elasticsearch:POST http://localhost:9200/movies/_bulk?refresh=true [status:200 request:0.148s]
+INFO:root:Loaded 99 movies to Elasticsearch
+INFO:root:Postgres connection has been closed correctly
+INFO:root:Script is waiting 60 seconds for restart```
+
 
 ___
 

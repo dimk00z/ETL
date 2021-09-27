@@ -63,8 +63,8 @@ INFO:root:Loaded 300 movies to Elasticsearch
 INFO:elasticsearch:POST http://localhost:9200/movies/_bulk?refresh=true [status:200 request:0.148s]
 INFO:root:Loaded 99 movies to Elasticsearch
 INFO:root:Postgres connection has been closed correctly
-INFO:root:Script is waiting 60 seconds for restart```
-
+INFO:root:Script is waiting 60 seconds for restart
+```
 
 ___
 

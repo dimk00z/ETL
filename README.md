@@ -1,44 +1,51 @@
-# Решение проектной работы 3 спринта
-`curl -X DELETE "localhost:9200/movies?pretty"` - удалить индекс
+# Проектное задание: ETL.
 
+## Актуальное задание на третий спринт
 
+[Актуальное задание](https://practicum.yandex.ru/learn/middle-python/courses/af061b15-1607-45f2-8d34-f88d4b21765a/sprints/5436/topics/c8fc5bcc-06bd-4098-acd2-306c2e3d8e82/lessons/b48733fd-637c-4f34-b1a1-25103549e4f3/) отличается от того, что указано в репозитории. В задании нет указания для использования корутин и асинхронности, поэтому в моем решении их нет. Так же не вижу смысла в текущем виде их применять.
 
-## [Task 1](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/tasks/01_django.md)
+# Решение проектного задания
 
-Добавлена [первая версия api](https://github.com/dimk00z/Admin_panel_sprint_2/tree/main/movies_admin/api/v1), в которой реализованы выгрузка json в формате [django_openapi.yml](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/files/django_openapi.yml).
-Вся логика прописана в [views.py](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/movies_admin/api/v1/views.py).
-Queryset собирается по фильмам с prefetch_related по "persons", "film_genres". Использована агрегация по жанрам и ролям персон.
-
-## [Task 2](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/tasks/02_docker.md), [Task 3](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/tasks/03_nginx.md)
+## Состав проекта
 
 Для развертывания проекта используется docker-compose.
 
-Файл [docker-compose.yaml](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/docker-compose.yaml) содержит описание трех контейнеров проекта:
+Файл [docker-compose.yaml](https://github.com/dimk00z/ETL/blob/main/docker-compose.yaml) содержит описание трех образов проекта:
 
-1. `postges_movie_db` - контейнер для развертывания postgres. В текущих настройках файлы базы данных связаны с путем `../postgres`
+1. `postges_movie_db` - образ для развертывания postgres. В текущих настройках файлы базы данных связаны с путем `../postgres`
 
-2. `movies_admin` - контейнер с бэкэндом django на основе [Dockerfile_django](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/Dockerfile_django). При развертывании в образ устанавливаются зависимости [production.txt](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/movies_admin/requirements/production.txt). Сервер работает через `gunicorn`.
-3. `nginx` - контейнер с nginx веб-сервером на основе [Dockerfile_nginx](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/nginx/Dockerfile_nginx) для отдачи статики и проброса с movies_admin:8000.
+2. `movies_admin` - образ с бэкэндом django на основе [Dockerfile_django](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/Dockerfile_django). При развертывании в образ устанавливаются зависимости [production.txt](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/movies_admin/requirements/production.txt). Сервер работает через `gunicorn`.
+3. `nginx` - образ с nginx веб-сервером на основе [Dockerfile_nginx](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/nginx/Dockerfile_nginx) для отдачи статики и проброса с movies_admin:8000.
+4. `elasticsearch` - образ с Elasticsearch v.7.14.1 для хранения поисковх индексов
+5. `redis` - Redis для хранения состояния
+6. `postgres_to_es` - сервис для загрузки индексов из Postgres в Elasticsearch
+
+## Описание ETL реализации
+
+- `main.py` - основной скрипт для запуска ETL. Весь процесс предстваляет собой бесконечный цикл с задержкой выполнения `REPEAT_TIME` из переменных окружения;
+- - `def main` - подгружает настройки для баз данных, и вызывает `start_etl`. По выполнению закрвывает коннекты;
+- - `def start_etl` - основная функция загрузки данных; 
+- `connections.py` - содержит соединения с Postgres, ES, Redis. Все используют `backoff` для возможности переподключений;
+- `state.py` - классы для сохранения состояний по аналогии с предложенными в теории;
+- `extractor.py` - загружает данные из Postgres в лимитах `POSTGRES_PAGE_LIMIT` и отдает их в режиме генератора списком из dataclass. Данные подгружаются частями;
+- `transformer.py` - преобразует в необходимый для Elascticseacrh вид;
+- `loader.py` - создает индекмс при необходимости, пишет в ES;
+- `models.py` - описание dataclasses для удобства выгрузки и валидации;
+- `setting_loaders.py` - подгрузка настроек для сервисов с использованием `pydantic`.
+
 
 ## Запуск проекта
 
-1. Для корректной работы в movies_admin необходим `.env` файл на основе [.env_example](https://github.com/dimk00z/Admin_panel_sprint_2/blob/main/movies_admin/.env_example).
-2. `docker-compose up -d --build` - для построения и запуска контейнеров.
-Предполагается, что первичные миграции проведены и в базе есть данные администратора.
-3. Пример ссылок:
+1. Для корректной работы необходимs `.env` файл на основе `env_example`. Важно: если `ES_SHOULD_DROP_INDEX=TRUE`, то индекс и запись в redit сбросятся.
+2. Предпологается, что по пути `../postgres` находятся данные из предыдущих двух спринтов: первичные миграции проведены, в базе есть данные администратора и выгружены данные из sqlite.
+4. `docker-compose up -d --build` - для построения и запуска контейнеров.
+5. `docker-compose down -v` -  для удаления контейнеров
 
-http://localhost/admin/
-
-http://localhost/api/v1/movies/
-
-http://localhost/api/v1/movies/00af52ec-9345-4d66-adbe-50eb917f463a/
-
-4. `docker-compose down -v`
 
 ___
 
 
-# Проектное задание: ETL
+# Проектное задание: ETL (неатуальное)
 
 В предыдущем модуле вы реализовывали механизм для полнотекстового поиска. Теперь улучшим его: научим его работать с новой схемой и оптимизируем количество элементов для обновления.
 

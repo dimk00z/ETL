@@ -9,12 +9,8 @@ import psycopg2
 from dotenv import load_dotenv
 from redis import Redis
 
-from connections import (
-    close_connections,
-    connect_to_elastic,
-    connect_to_postges,
-    connect_to_redis,
-)
+from connections import connect_to_elastic, connect_to_postges, connect_to_redis
+from correct_terminate import TerminateProtected
 from extractor import PostgresExtractor
 from loader import ESLoader
 from setting_loaders import load_etl_settings
@@ -53,6 +49,7 @@ def start_etl(pg_conn, es_loader: ESLoader, state: State):
 
 
 def create_es_index(elastic_settings):
+
     es: elasticsearch.client.Elasticsearch = connect_to_elastic(elastic_settings.host)
     es_loader = ESLoader(es=es, index_name=elastic_settings.index)
     es_loader.drop_index()
@@ -73,29 +70,15 @@ def main():
     if environ.get("ES_SHOULD_DROP_INDEX") == "TRUE":
         create_es_index(elastic_settings)
         redis_adapter.flushdb(redis_db)
-    try:
-        while True:
-            pg_conn: psycopg2.extensions.connection = connect_to_postges(postgres_settings.dict())
-            state = State(storage=RedisStorage(redis_adapter=redis_adapter, redis_db=redis_db))
-            es: elasticsearch.client.Elasticsearch = connect_to_elastic(elastic_settings.host)
+    pg_conn: psycopg2.extensions.connection = connect_to_postges(postgres_settings.dict())
+    state = State(storage=RedisStorage(redis_adapter=redis_adapter, redis_db=redis_db))
+    es: elasticsearch.client.Elasticsearch = connect_to_elastic(elastic_settings.host)
+    es_loader = ESLoader(es)
+    with TerminateProtected(pg_conn=pg_conn, es=es):
 
-            es_loader = ESLoader(es)
-
-            start_etl(pg_conn=pg_conn, es_loader=es_loader, state=state)
-
-            close_connections(pg_conn=pg_conn, es=es)
-
-            logging.info("Script is waiting %d seconds for restart", repeat_time)
-            sleep(repeat_time)
-
-    except (KeyboardInterrupt, SystemExit):
-        logging.info("End etl_app at %s", datetime.now())
-    finally:
-        if "pg_conn" not in locals():
-            pg_conn = None
-        if "es" not in locals():
-            es = None
-        close_connections(pg_conn=pg_conn, es=es)
+        start_etl(pg_conn=pg_conn, es_loader=es_loader, state=state)
+        logging.info("Script is waiting %d seconds for restart", repeat_time)
+        sleep(repeat_time)
 
 
 if __name__ == "__main__":

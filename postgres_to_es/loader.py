@@ -90,7 +90,7 @@ class ESLoader:
                     raise RequestError
                 logging.info(create_result)
             else:
-                logging.info("Elasticsearch index %i already exists", self.index_name)
+                logging.info("Elasticsearch index %s already exists", self.index_name)
             index_exist = True
         except RequestError:
             logging.error(create_result["error"])

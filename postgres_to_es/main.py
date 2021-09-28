@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from redis import Redis
 
 from connections import (
-    close_pg_conn,
+    close_connections,
     connect_to_elastic,
     connect_to_postges,
     connect_to_redis,
@@ -43,7 +43,7 @@ def start_etl(pg_conn, es_loader: ESLoader, state: State):
         es_loader.bulk_index(transformed_data=transformed_movies, last_state=last_state)
 
         loaded_films_number = len(extracted_movies)
-        logging.info("Loaded %l movies to Elasticsearch", loaded_films_number)
+        logging.info("Loaded %d movies to Elasticsearch", loaded_films_number)
 
         last_updated_at = extracted_movies[-1].updated_at
         state.set_state("last_updated_at", last_updated_at)
@@ -61,7 +61,7 @@ def create_es_index(elastic_settings):
 
 
 def main():
-    logging.info("Start etl_app at %d", datetime.now())
+    logging.info("Start etl_app at %s", datetime.now())
 
     postgres_settings, elastic_settings, redis_settings = load_etl_settings()
 
@@ -83,16 +83,19 @@ def main():
 
             start_etl(pg_conn=pg_conn, es_loader=es_loader, state=state)
 
-            close_pg_conn(pg_conn=pg_conn)
-            es.transport.close()
-            logging.info("Script is waiting %r seconds for restart", repeat_time)
+            close_connections(pg_conn=pg_conn, es=es)
+
+            logging.info("Script is waiting %d seconds for restart", repeat_time)
             sleep(repeat_time)
 
-    except (KeyboardInterrupt,):
-        logging.info("End etl_app at %d", datetime.now())
+    except (KeyboardInterrupt, SystemExit):
+        logging.info("End etl_app at %s", datetime.now())
     finally:
-        if "pg_conn" in locals():
-            close_pg_conn(pg_conn=pg_conn)
+        if "pg_conn" not in locals():
+            pg_conn = None
+        if "es" not in locals():
+            es = None
+        close_connections(pg_conn=pg_conn, es=es)
 
 
 if __name__ == "__main__":

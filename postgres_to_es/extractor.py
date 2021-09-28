@@ -1,8 +1,10 @@
 import logging
 from typing import List
 
+import backoff
 import psycopg2
 
+from connections import backoff_hdlr
 from models import FilmWork, Person
 
 
@@ -46,6 +48,7 @@ class PostgresExtractor:
                     )
         return film_work
 
+    @backoff.on_exception(backoff.expo, (psycopg2.Error, psycopg2.OperationalError), on_backoff=backoff_hdlr)
     def extract_data(self) -> List[FilmWork]:
         movies_id_query: str = " ".join(
             [
@@ -80,7 +83,6 @@ class PostgresExtractor:
         """
         movies_id_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(name="movies_id_cursor")
         movies_id_cursor.execute(movies_id_query)
-
         while data := movies_id_cursor.fetchmany(self.cursor_limit):
             movies: List[FilmWork] = []
             movies_extented_data_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(

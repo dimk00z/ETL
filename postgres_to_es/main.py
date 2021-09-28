@@ -74,11 +74,12 @@ def main():
     state = State(storage=RedisStorage(redis_adapter=redis_adapter, redis_db=redis_db))
     es: elasticsearch.client.Elasticsearch = connect_to_elastic(elastic_settings.host)
     es_loader = ESLoader(es)
-    with TerminateProtected(pg_conn=pg_conn, es=es):
 
-        start_etl(pg_conn=pg_conn, es_loader=es_loader, state=state)
-        logging.info("Script is waiting %d seconds for restart", repeat_time)
-        sleep(repeat_time)
+    with TerminateProtected(pg_conn=pg_conn, es=es):
+        while True:
+            start_etl(pg_conn=pg_conn, es_loader=es_loader, state=state)
+            logging.info("Script is waiting %d seconds for restart", repeat_time)
+            sleep(repeat_time)
 
 
 if __name__ == "__main__":

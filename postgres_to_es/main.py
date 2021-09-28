@@ -39,6 +39,7 @@ def start_etl(pg_conn, es_loader: ESLoader, state: State):
 
         transformer = Transformer(extracted_movies=extracted_movies)
         transformed_movies: List[dict] = transformer.transform_movies()
+
         es_loader.bulk_index(transformed_data=transformed_movies, last_state=last_state)
 
         loaded_films_number = len(extracted_movies)
@@ -72,20 +73,25 @@ def main():
     if environ.get("ES_SHOULD_DROP_INDEX") == "TRUE":
         create_es_index(elastic_settings)
         redis_adapter.flushdb(redis_db)
+    try:
+        while True:
+            pg_conn: psycopg2.extensions.connection = connect_to_postges(postgres_settings.dict())
+            state = State(storage=RedisStorage(redis_adapter=redis_adapter, redis_db=redis_db))
+            es: elasticsearch.client.Elasticsearch = connect_to_elastic(elastic_settings.host)
 
-    while True:
-        pg_conn: psycopg2.extensions.connection = connect_to_postges(postgres_settings.dict())
-        state = State(storage=RedisStorage(redis_adapter=redis_adapter, redis_db=redis_db))
-        es: elasticsearch.client.Elasticsearch = connect_to_elastic(elastic_settings.host)
+            es_loader = ESLoader(es)
 
-        es_loader = ESLoader(es)
+            start_etl(pg_conn=pg_conn, es_loader=es_loader, state=state)
 
-        start_etl(pg_conn=pg_conn, es_loader=es_loader, state=state)
+            close_pg_conn(pg_conn=pg_conn)
+            es.transport.close()
+            logging.info(f"Script is waiting {repeat_time} seconds for restart")
+            sleep(repeat_time)
 
-        close_pg_conn(pg_conn=pg_conn)
-        es.transport.close()
-        logging.info(f"Script is waiting {repeat_time} seconds for restart")
-        sleep(repeat_time)
+    except (KeyboardInterrupt,):
+        if "pg_conn" in locals():
+            pg_conn.close()
+        logging.info(f"End etl_app at {datetime.now()}")
 
 
 if __name__ == "__main__":

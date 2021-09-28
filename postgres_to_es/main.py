@@ -43,7 +43,7 @@ def start_etl(pg_conn, es_loader: ESLoader, state: State):
         es_loader.bulk_index(transformed_data=transformed_movies, last_state=last_state)
 
         loaded_films_number = len(extracted_movies)
-        logging.info(f"Loaded {loaded_films_number} movies to Elasticsearch")
+        logging.info("Loaded %l movies to Elasticsearch", loaded_films_number)
 
         last_updated_at = extracted_movies[-1].updated_at
         state.set_state("last_updated_at", last_updated_at)
@@ -61,7 +61,7 @@ def create_es_index(elastic_settings):
 
 
 def main():
-    logging.info(f"Start etl_app at {datetime.now()}")
+    logging.info("Start etl_app at %d", datetime.now())
 
     postgres_settings, elastic_settings, redis_settings = load_etl_settings()
 
@@ -85,13 +85,14 @@ def main():
 
             close_pg_conn(pg_conn=pg_conn)
             es.transport.close()
-            logging.info(f"Script is waiting {repeat_time} seconds for restart")
+            logging.info("Script is waiting %r seconds for restart", repeat_time)
             sleep(repeat_time)
 
     except (KeyboardInterrupt,):
+        logging.info("End etl_app at %d", datetime.now())
+    finally:
         if "pg_conn" in locals():
-            pg_conn.close()
-        logging.info(f"End etl_app at {datetime.now()}")
+            close_pg_conn(pg_conn=pg_conn)
 
 
 if __name__ == "__main__":

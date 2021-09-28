@@ -31,6 +31,8 @@ def start_etl(pg_conn, es_loader: ESLoader, state: State):
         last_state=last_state if last_state else "",
     )
     loaded_films_number: int = 0
+
+    # со слов Дианы можно оставить без корутин, в целом тут логика похожая
     for extracted_movies in postgres_extractor.extract_data():
 
         transformer = Transformer(extracted_movies=extracted_movies)

@@ -56,3 +56,4 @@ postgres/
 static/
 staticfiles/
 .vscode/
+docker-compose-dev.yaml

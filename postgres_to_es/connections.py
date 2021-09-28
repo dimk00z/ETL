@@ -36,14 +36,3 @@ def connect_to_redis(settings: dict) -> Redis:
     redis_adapter: Redis = Redis(**settings)
     redis_adapter.ping()
     return redis_adapter
-
-
-def close_connections(
-    pg_conn: psycopg2.extensions.connection = None, es: elasticsearch.client.Elasticsearch = None
-):
-    if pg_conn:
-        pg_conn.close()
-        logging.info("Postgres connection has been closed correctly")
-    if es:
-        es.transport.close()
-        logging.info("Elasticsearch connection has been closed correctly")

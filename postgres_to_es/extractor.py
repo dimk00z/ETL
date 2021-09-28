@@ -81,19 +81,20 @@ class PostgresExtractor:
             GROUP BY fw.id, fw.title, fw.description, fw.rating
             ORDER BY fw.updated_at;
         """
-        movies_id_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(name="movies_id_cursor")
-        movies_id_cursor.execute(movies_id_query)
-        while data := movies_id_cursor.fetchmany(self.cursor_limit):
-            movies: List[FilmWork] = []
-            movies_extented_data_cursor: psycopg2.extras.DictCursor = self.pg_conn.cursor(
-                name="movies_extented_data_cursor"
-            )
-            movies_extented_data_query = movies_info_query.format(",".join((f"'{id}'" for id, _ in data)))
-            movies_extented_data_cursor.execute(movies_extented_data_query)
-            movies_extented_data = movies_extented_data_cursor.fetchall()
+        with self.pg_conn.cursor(name="movies_id_cursor") as movies_id_cursor:
+            movies_id_cursor.execute(movies_id_query)
+            while data := movies_id_cursor.fetchmany(self.cursor_limit):
+                movies: List[FilmWork] = []
+                with self.pg_conn.cursor(name="movies_extented_data_cursor") as movies_extented_data_cursor:
 
-            for movie_row in movies_extented_data:
-                movies.append(self.fetch_movie_row(row=movie_row))
-            movies_extented_data_cursor.close()
+                    movies_extented_data_query = movies_info_query.format(
+                        ",".join((f"'{id}'" for id, _ in data))
+                    )
+                    movies_extented_data_cursor.execute(movies_extented_data_query)
+                    movies_extented_data = movies_extented_data_cursor.fetchall()
 
-            yield movies
+                for movie_row in movies_extented_data:
+                    movies.append(self.fetch_movie_row(row=movie_row))
+                movies_extented_data_cursor.close()
+
+                yield movies

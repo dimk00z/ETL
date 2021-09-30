@@ -100,24 +100,22 @@ class ESLoader:
 
     @backoff.on_exception(backoff.expo, (ElasticsearchException), on_backoff=backoff_hdlr)
     def bulk_index(self, transformed_data: List[dict], last_state: str) -> None:
-        try:
-            if last_state:
-                remove_actions = [
-                    {
-                        "_id": transformed_film["_id"],
-                        "_op_type": "delete",
-                    }
-                    for transformed_film in transformed_data
-                ]
-                helpers.bulk(
-                    self.es,
-                    actions=remove_actions,
-                    index=self.index_name,
-                    raise_on_error=False,
-                )
-
+        # согласен с замечанием, убрал try..except
+        if last_state:
+            remove_actions = [
+                {
+                    "_id": transformed_film["_id"],
+                    "_op_type": "delete",
+                }
+                for transformed_film in transformed_data
+            ]
             helpers.bulk(
-                self.es, actions=transformed_data, index=self.index_name, refresh=True, raise_on_error=True
+                self.es,
+                actions=remove_actions,
+                index=self.index_name,
+                raise_on_error=False,
             )
-        except ElasticsearchException as elasticsearch_exception:
-            logging.error(elasticsearch_exception)
+
+        helpers.bulk(
+            self.es, actions=transformed_data, index=self.index_name, refresh=True, raise_on_error=True
+        )

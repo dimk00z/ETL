@@ -77,6 +77,8 @@ def main():
     es: elasticsearch.client.Elasticsearch = connect_to_elastic(elastic_settings.host)
     es_loader = ESLoader(es)
 
+    # спасибо за предложения по оптимизаци
+    # но оставлю свой вариант, т.к. этот класс мне будет проще переиспользовать
     with TerminateProtected(pg_conn=pg_conn, es=es):
         while True:
             start_etl(pg_conn=pg_conn, es_loader=es_loader, state=state)
